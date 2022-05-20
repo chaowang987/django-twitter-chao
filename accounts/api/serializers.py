@@ -14,7 +14,7 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         if not User.objects.filter(username=data['username'].lower()).exists():
             raise exceptions.ValidationError({
-                'message': 'User does not exist.'
+                'username': 'User does not exist.'
             })
         return data
 
@@ -29,15 +29,15 @@ class SignupSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password']
 
     # will be called when is_valid is called
-    # this is to make sure username and email not case-sensitive
+    # needs to check with insensitive letter
     def validate(self, data):
         if User.objects.filter(username=data['username'].lower()).exists():
             raise exceptions.ValidationError({
-                'message': 'This email address has been occupied.'
+                'username': 'This user has been occupied.'
             })
         if User.objects.filter(email=data['email'].lower()).exists():
             raise exceptions.ValidationError({
-                'message': 'This email address has been occupied.'
+                'email': 'This email address has been occupied.'
             })
         return data
 
