@@ -11,13 +11,13 @@ SIGNUP_URL = '/api/accounts/signup/'
 class AccountApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = self.createUser(
+        self.user = self.create_user(
             username='admin_123',
             email='admin@twitter.com',
             password='correct password',
         )
 
-    def createUser(self, username, email, password):
+    def create_user(self, username, email, password):
         return User.objects.create_user(username, email, password)
 
     # every test starts with 'test_xxxx'
