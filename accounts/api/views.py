@@ -29,9 +29,12 @@ class AccountViewSet(viewsets.ViewSet):
 
     @action(methods=['GET'], detail=False)
     def login_status(self, request):
-        data = {"has_logged_in": request.user.is_authenticated}
+        data = {
+            'has_logged_in': request.user.is_authenticated,
+            'ip': request.META['REMOTE_ADDR'],
+        }
         if request.user.is_authenticated:
-            data["user"] = UserSerializer(request.user).data
+            data['user'] = UserSerializer(request.user).data
         return Response(data)
 
     @action(methods=['POST'], detail=False)
@@ -51,13 +54,6 @@ class AccountViewSet(viewsets.ViewSet):
             }, status=400)
         username = serializer.validated_data['username']
         password = serializer.validated_data['password']
-        # the below code can be put under LoginSerializer as serializer does
-        # have checking mechanism to validate this.
-        # if not User.objects.filter(username=username).exists():
-        #     return Response({
-        #         "success": False,
-        #         "message": "User does not exist.",
-        #     }, status=400)
         user = django_authenticate(username=username, password=password)
         if not user or user.is_anonymous:
             return Response({
