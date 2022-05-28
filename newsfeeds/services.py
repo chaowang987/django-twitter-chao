@@ -13,7 +13,7 @@ class NewsFeedService(object):
         #     NewsFeed.objects.create(user=follower, tweet=tweet)
         newsfeeds = [
             NewsFeed(user=follower, tweet=tweet)
-            for follower in FriendshipService.get_followers()
+            for follower in FriendshipService.get_followers(tweet.user)
         ]
         # 把自己也加入到newsfeed里，因为自己也想看到
         newsfeeds.append(NewsFeed(user=tweet.user, tweet=tweet))
