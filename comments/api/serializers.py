@@ -40,3 +40,15 @@ class CommentSerializerForCreate(serializers.ModelSerializer):
             tweet_id=validated_data['tweet_id'],
             content=validated_data['content'],
         )
+
+# 最好不要把create and update写在一起，这样可以作到更好的decoupling
+class CommentSerializerForUpdate(serializers.ModelSerializer):
+
+    class Meta:
+        model = Comment
+        fields = ('content',)
+
+    def update(self, instance, validated_data):
+        instance.content = validated_data['content']
+        instance.save()
+        return instance
