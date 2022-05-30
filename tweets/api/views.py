@@ -15,6 +15,7 @@ class TweetViewSet(viewsets.GenericViewSet):
         return [IsAuthenticated()]
 
     def list(self, request):
+        # /api/tweets/?user_id=<id>
         if 'user_id' not in request.query_params:
             return Response('missing user_id', status=400)
         user_id = request.query_params['user_id']
