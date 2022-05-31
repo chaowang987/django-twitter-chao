@@ -477,7 +477,7 @@ if __name__ == '__main__':
     #so that we don't get multiple pydevconsole modules if it's executed directly (otherwise we'd have multiple
     #representations of its classes).
     #See: https://sw-brainwy.rhcloud.com/tracker/PyDev/446:
-    #'Variables' and 'Expressions' views.py stopped working when debugging interactive console
+    #'Variables' and 'Expressions' views stopped working when debugging interactive console
     import pydevconsole
     sys.stdin = pydevconsole.BaseStdIn(sys.stdin)
 
