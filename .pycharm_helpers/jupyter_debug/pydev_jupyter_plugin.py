@@ -120,9 +120,13 @@ def cmd_step_into(plugin, pydb, frame, event, args, stop_info, stop):
 
 
 def _is_equals(frame, other_frame):
-    # we can't compare frame directly, because Jupyter compiles ast nodes in cell separately
-    return frame.f_code.co_filename == other_frame.f_code.co_filename and \
-           frame.f_code.co_name == other_frame.f_code.co_name
+    # We can't compare frames directly, because Jupyter compiles ast nodes
+    # in cell separately. At the same time, the frame filename is unique and stays
+    # the same within a cell.
+    return frame.f_code.co_filename == other_frame.f_code.co_filename \
+           and ((frame.f_code.co_name.startswith('<cell line:')
+                 and other_frame.f_code.co_name.startswith('<cell line:'))
+                or frame.f_code.co_name == other_frame.f_code.co_name)
 
 
 def _get_stop_frame(info):
@@ -217,13 +221,20 @@ def _is_inside_jupyter_cell(frame, pydb):
 
 
 def is_cell_filename(filename):
-    ipython_shell = get_ipython()
+    ipython_shell = _get_ipython_safely()
     if hasattr(ipython_shell, 'pydev_cell_info'):
         cell_info = ipython_shell.pydev_cell_info
         if hasattr(cell_info, 'jupyter_cell_name_to_id'):
             cell_names = cell_info.jupyter_cell_name_to_id
             return filename in cell_names
     return False
+
+
+def _get_ipython_safely():
+    try:
+        return get_ipython()
+    except NameError:
+        return None
 
 
 def suspend(plugin, pydb, thread, frame, bp_type):
