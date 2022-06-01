@@ -12,13 +12,8 @@ FOLLOWINGS_URL = '/api/friendships/{}/followings/'
 class FriendshipApiTests(TestCase):
 
     def setUp(self):
-        self.marcus = self.create_user('marcus')
-        self.marcus_client = APIClient()
-        self.marcus_client.force_authenticate(self.marcus)
-
-        self.fiona = self.create_user('fiona')
-        self.fiona_client = APIClient()
-        self.fiona_client.force_authenticate(self.fiona)
+        self.marcus, self.marcus_client = self.create_user_and_client('marcus')
+        self.fiona, self.fiona_client = self.create_user_and_client('fiona')
 
         for i in range(2):
             fiona_follower = self.create_user(f'fiona_follower{i}')

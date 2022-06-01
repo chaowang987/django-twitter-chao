@@ -10,13 +10,8 @@ COMMENT_DETAIL_URL = '/api/comments/{}/'
 class CommentApiTests(TestCase):
 
     def setUp(self):
-        self.marcus = self.create_user('marcus')
-        self.marcus_client = APIClient()
-        self.marcus_client.force_authenticate(self.marcus)
-        self.fiona = self.create_user('fiona')
-        self.fiona_client = APIClient()
-        self.fiona_client.force_authenticate(self.fiona)
-
+        self.marcus, self.marcus_client = self.create_user_and_client('marcus')
+        self.fiona, self.fiona_client = self.create_user_and_client('fiona')
         self.tweet = self.create_tweet(self.marcus)
 
     def test_create(self):
