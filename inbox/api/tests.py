@@ -68,7 +68,7 @@ class NotificationApiTests(TestCase):
         comment = self.create_comment(self.marcus, self.marcus_tweet)
         self.fiona_client.post(LIKE_URL, {
             'content_type': 'comment',
-            'object_id': self.marcus_tweet.id,
+            'object_id': comment.id,
         })
         # have two unread notifications
         unread_url = '/api/notifications/unread-count/'
@@ -103,7 +103,7 @@ class NotificationApiTests(TestCase):
         comment = self.create_comment(self.marcus, self.marcus_tweet)
         self.fiona_client.post(LIKE_URL, {
             'content_type': 'comment',
-            'object_id': self.marcus_tweet.id,
+            'object_id': comment.id,
         })
 
         # cant get notification without login
@@ -130,3 +130,52 @@ class NotificationApiTests(TestCase):
         self.assertEqual(response.data['count'], 1)
         response = self.marcus_client.get(NOTIFICATION_URL, {'unread': False})
         self.assertEqual(response.data['count'], 1)
+
+    def test_update(self):
+        self.fiona_client.post(LIKE_URL, {
+            'content_type': 'tweet',
+            'object_id': self.marcus_tweet.id,
+        })
+        comment = self.create_comment(self.marcus, self.marcus_tweet)
+        self.fiona_client.post(LIKE_URL, {
+            'content_type': 'comment',
+            'object_id': comment.id,
+        })
+
+        notification = self.marcus.notifications.first()
+
+        url = '/api/notifications/{}/'.format(notification.id)
+
+        # can't use post
+        response = self.marcus_client.post(url, {'unread': False})
+        self.assertEqual(response.status_code, 405)
+
+        # have to login
+        response = self.anonymous_client.put(url, {'unread': False})
+        self.assertEqual(response.status_code, 403)
+
+        # have to be the right user, return 403 instead of 404
+        response = self.fiona_client.put(url, {'unread': False})
+        self.assertEqual(response.status_code, 404)
+
+        # successfully read the unread
+        response = self.marcus_client.put(url, {'unread': False})
+        self.assertEqual(response.status_code, 200)
+        unread_url = '/api/notifications/unread-count/'
+        response = self.marcus_client.get(unread_url)
+        self.assertEqual(response.data['unread_count'], 1)
+
+        # mark it as unread again
+        response = self.marcus_client.put(url, {'unread': True})
+        response = self.marcus_client.get(unread_url)
+        self.assertEqual(response.data['unread_count'], 2)
+
+        # needs to use with param 'unread'
+        response = self.marcus_client.put(url, {'verb': 'asdad'})
+        self.assertEqual(response.status_code, 400)
+
+        #cant modify the other info
+        response = self.marcus_client.put(url, {'verb': 'asdad', 'unread': False})
+        self.assertEqual(response.status_code, 200)
+        notification.refresh_from_db()
+        self.assertNotEqual(notification.verb, 'asdad')
