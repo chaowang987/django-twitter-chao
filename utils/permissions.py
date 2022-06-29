@@ -5,6 +5,9 @@ class IsObjectOwner(BasePermission):
 
     # if detail=False, just check has_permission
     # if detail=True, need to check both has_permission and has_object_permission
+
+    message = 'You do not have permission to access this object.'
+
     def has_permission(self, request, view):
         return True
 
