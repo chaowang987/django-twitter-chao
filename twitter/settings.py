@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 from pathlib import Path
 
+import sys
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -148,7 +150,20 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-# try:
-#     from .local_settings import *
-# except:
-#     pass
+# 设置存储用户上传文件的 storage 用什么系统
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+TESTING = ((" ".join(sys.argv)).find('manage.py test') != -1)
+if TESTING:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
+# 当用s3boto3 作为用户上传文件存储时，需要按照你在 AWS 上创建的配置来设置你的 BUCKET_NAME
+# 和 REGION_NAME，这个值你可以改成你自己创建的 bucket 的名字和所在的 region
+AWS_STORAGE_BUCKET_NAME = 'django-twitter-chao'
+AWS_S3_REGION_NAME = 'us-east-1'
+
+MEDIA_ROOT = 'media/'
+
+try:
+    from .local_settings import *
+except:
+    pass
