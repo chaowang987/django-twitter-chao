@@ -45,6 +45,7 @@ class UserProfileSerializerForUpdate(serializers.ModelSerializer):
         model = UserProfile
         fields = ('nickname', 'avatar')
 
+
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
