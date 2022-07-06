@@ -1,7 +1,6 @@
-from rest_framework.test import APIClient
 from testing.testcases import TestCase
 from friendships.models import Friendship
-from utils.paginations import FriendshipPagination
+from friendships.api.paginations import FriendshipPagination
 
 import math
 
