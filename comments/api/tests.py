@@ -154,6 +154,6 @@ class CommentApiTests(TestCase):
         self.create_newsfeed(self.fiona, tweet)
         response = self.fiona_client.get(NEWSFEED_LIST_URL)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['newsfeeds'][0]['tweet']['comments_count'], 2)
+        self.assertEqual(response.data['results'][0]['tweet']['comments_count'], 2)
 
 

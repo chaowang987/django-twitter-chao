@@ -193,7 +193,7 @@ class TweetApiTests(TestCase):
         self.assertEqual(response.data['results'][1]['id'], tweets[page_size + 1].id)
         self.assertEqual(response.data['results'][page_size - 1]['id'], tweets[2 * page_size - 1].id)
 
-        # pull the latest newsfeed
+        # pull the latest tweet
         response = self.anonymous_client.get(TWEET_LIST_API, {
             'user_id': self.user1.id,
             'created_at__gt': tweets[0].created_at,
