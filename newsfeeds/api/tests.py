@@ -1,3 +1,6 @@
+from django.contrib.auth.models import User
+
+from accounts.services import UserService
 from testing.testcases import TestCase
 from utils.paginations import EndlessPagination
 
@@ -9,6 +12,7 @@ FOLLOW_URL = '/api/friendships/{}/follow/'
 class FriendshipApiTests(TestCase):
 
     def setUp(self):
+        self.clear_cache()
         self.marcus, self.marcus_client = self.create_user_and_client('marcus')
         self.fiona, self.fiona_client = self.create_user_and_client('fiona')
 
@@ -86,3 +90,27 @@ class FriendshipApiTests(TestCase):
         self.assertEqual(response.data['has_next_page'], False)
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['id'], new_newsfeed.id)
+
+    def test_user_cache(self):
+        profile = self.fiona.profile
+        profile.nickname = 'dapangzi'
+        profile.save()
+        self.assertEqual(self.fiona.username, 'fiona')
+        self.create_newsfeed(self.fiona, self.create_tweet(self.marcus))
+        self.create_newsfeed(self.fiona, self.create_tweet(self.fiona))
+
+        response = self.fiona_client.get(NEWSFEEDS_URL)
+        results = response.data['results']
+        self.assertEqual(results[0]['tweet']['user']['username'], 'fiona')
+        self.assertEqual(results[0]['tweet']['user']['nickname'], 'dapangzi')
+        self.assertEqual(results[1]['tweet']['user']['username'], 'marcus')
+
+        self.fiona.username = 'fionaw'
+        self.fiona.save()
+        profile.nickname = 'xiaopangzi'
+        profile.save()
+        response = self.fiona_client.get(NEWSFEEDS_URL)
+        results = response.data['results']
+        self.assertEqual(results[0]['tweet']['user']['username'], 'fionaw')
+        self.assertEqual(results[0]['tweet']['user']['nickname'], 'xiaopangzi')
+        self.assertEqual(results[1]['tweet']['user']['username'], 'marcus')
