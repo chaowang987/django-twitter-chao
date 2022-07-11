@@ -114,3 +114,25 @@ class FriendshipApiTests(TestCase):
         self.assertEqual(results[0]['tweet']['user']['username'], 'fionaw')
         self.assertEqual(results[0]['tweet']['user']['nickname'], 'xiaopangzi')
         self.assertEqual(results[1]['tweet']['user']['username'], 'marcus')
+
+    def test_tweet_cache(self):
+        tweet = self.create_tweet(self.marcus, 'content1')
+        self.create_newsfeed(self.fiona, tweet)
+        response = self.fiona_client.get(NEWSFEEDS_URL)
+        result = response.data['results']
+        self.assertEqual(result[0]['tweet']['user']['username'], 'marcus')
+        self.assertEqual(result[0]['tweet']['content'], 'content1')
+
+        # change the username
+        self.marcus.username = 'marcusw'
+        self.marcus.save()
+        response = self.fiona_client.get(NEWSFEEDS_URL)
+        result = response.data['results']
+        self.assertEqual(result[0]['tweet']['user']['username'], 'marcusw')
+
+        # change the content
+        tweet.content = 'content2'
+        tweet.save()
+        response = self.fiona_client.get(NEWSFEEDS_URL)
+        result = response.data['results']
+        self.assertEqual(result[0]['tweet']['content'], 'content2')
