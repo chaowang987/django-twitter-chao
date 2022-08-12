@@ -216,3 +216,43 @@ class LikeApiTests(TestCase):
         self.assertEqual(response.data['likes'][0]['user']['id'], self.marcus.id)
         self.assertEqual(response.data['likes'][1]['user']['id'], self.fiona.id)
 
+    def test_likes_count_with_cache(self):
+        tweet = self.create_tweet(self.marcus)
+        self.create_newsfeed(self.marcus, tweet)
+        self.create_newsfeed(self.fiona, tweet)
+
+        data = {'content_type': 'tweet', 'object_id': tweet.id}
+        tweet_url = TWEET_DETAIL_API.format(tweet.id)
+        for i in range(3):
+            _, client = self.create_user_and_client('user{}'.format(i))
+            client.post(LIKE_BASE_API, data)
+
+            # check tweet api
+            response = client.get(tweet_url)
+            self.assertEqual(response.data['likes_count'], i + 1)
+            tweet.refresh_from_db()
+            self.assertEqual(tweet.likes_count, i + 1)
+
+        self.fiona_client.post(LIKE_BASE_API, data)
+        response = self.fiona_client.get(tweet_url)
+        self.assertEqual(response.data['likes_count'], 4)
+        tweet.refresh_from_db()
+        self.assertEqual(tweet.likes_count, 4)
+
+        # check newsfeed api
+        newsfeed_url = '/api/newsfeeds/'
+        response = self.marcus_client.get(newsfeed_url)
+        self.assertEqual(response.data['results'][0]['tweet']['likes_count'], 4)
+        response = self.fiona_client.get(newsfeed_url)
+        self.assertEqual(response.data['results'][0]['tweet']['likes_count'], 4)
+
+        # fiona canceled the likes
+        self.fiona_client.post(LIKE_CANCEL_API, data)
+        tweet.refresh_from_db()
+        self.assertEqual(tweet.likes_count, 3)
+        response = self.marcus_client.get(tweet_url)
+        self.assertEqual(response.data['likes_count'], 3)
+        response = self.fiona_client.get(newsfeed_url)
+        self.assertEqual(response.data['results'][0]['tweet']['likes_count'], 3)
+        response = self.marcus_client.get(newsfeed_url)
+        self.assertEqual(response.data['results'][0]['tweet']['likes_count'], 3)

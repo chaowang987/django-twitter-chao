@@ -157,4 +157,43 @@ class CommentApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['results'][0]['tweet']['comments_count'], 2)
 
+    def test_comments_count_with_cache(self):
+        tweet_url = '/api/tweets/{}/'.format(self.tweet.id)
+        response = self.marcus_client.get(tweet_url)
+        self.assertEqual(self.tweet.comments_count, 0)
+        self.assertEqual(response.data['comments_count'], 0)
+
+        data = {'tweet_id': self.tweet.id, 'content': 'a comment'}
+        for i in range(2):
+            _, client = self.create_user_and_client('user{}'.format(i))
+            client.post(COMMENT_URL, data)
+            response = client.get(tweet_url)
+            self.assertEqual(response.data['comments_count'], i + 1)
+            self.assertEqual(self.tweet.comments_count, i)
+            self.tweet.refresh_from_db()
+            self.assertEqual(self.tweet.comments_count, i + 1)
+
+        comment_data = self.fiona_client.post(COMMENT_URL, data).data
+        response = self.fiona_client.get(tweet_url)
+        self.assertEqual(response.data['comments_count'], 3)
+        self.tweet.refresh_from_db()
+        self.assertEqual(self.tweet.comments_count, 3)
+
+        # update comment shouldnt update comments count
+        comment_url = '{}{}/'.format(COMMENT_URL, comment_data['id'])
+        response = self.fiona_client.put(comment_url, {'content': 'updated'})
+        self.assertEqual(response.status_code, 200)
+        response = self.fiona_client.get(tweet_url)
+        self.assertEqual(response.data['comments_count'], 3)
+        self.tweet.refresh_from_db()
+        self.assertEqual(self.tweet.comments_count, 3)
+
+        # delete comment will update comments count
+        response = self.fiona_client.delete(comment_url)
+        self.assertEqual(response.status_code, 200)
+        response = self.fiona_client.get(tweet_url)
+        self.assertEqual(response.data['comments_count'], 2)
+        self.assertEqual(self.tweet.comments_count, 3)
+        self.tweet.refresh_from_db()
+        self.assertEqual(self.tweet.comments_count, 2)
 
