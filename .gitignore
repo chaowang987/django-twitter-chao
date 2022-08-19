@@ -4,6 +4,9 @@
 Vagrantfile
 .idea
 media/
+hbase-2.4.13/
+thrift-0.16.0.tar.gz
+thrift-0.16.0/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
