@@ -1,6 +1,7 @@
-from django_hbase.client import HBaseClient
-from .fields import HBaseField, IntergerField, TimeStampField
 from .exceptions import EmptyColumnError, BadRowKeyError
+from .fields import HBaseField, IntegerField, TimeStampField
+from django.conf import settings
+from django_hbase.client import HBaseClient
 
 
 class HBaseModel:
@@ -15,7 +16,7 @@ class HBaseModel:
         row_key = ()
 
     def __init__(self, **kwargs):
-        for key, value in self.get_field_hash().items():
+        for key, field in self.get_field_hash().items():
             value = kwargs.get(key)
             setattr(self, key, value)
 
@@ -31,7 +32,7 @@ class HBaseModel:
     @classmethod
     def serialize_field(cls, field, value):
         value = str(value)
-        if isinstance(field, IntergerField):
+        if isinstance(field, IntegerField):
             # need add 0 in front cause the sorting is lexicographical order
             value = str(value)
             while len(value) < 16:
@@ -48,17 +49,17 @@ class HBaseModel:
         """
         field_hash = cls.get_field_hash()
         values = []
-        for key, field in field_hash:
+        for key, field in field_hash.items():
             if field.column_family:
                 continue
             value = data.get(key)
-            if not value:
+            if value is None:
                 raise BadRowKeyError(f'{key} is missing in the row key.')
-            if ':' in value:
-                raise BadRowKeyError(f"{key} should not contain ':' in value.")
             value = cls.serialize_field(field, value)
+            if ':' in value:
+                raise BadRowKeyError(f"{key} should not contain ':' in value: {value}.")
             values.append(value)
-        return bytes(''.join(values), encoding='uft-8')
+        return bytes(':'.join(values), encoding='utf-8')
 
     @classmethod
     def serialize_row_data(cls, data):
@@ -68,12 +69,12 @@ class HBaseModel:
         """
         row_data = {}
         field_hash = cls.get_field_hash()
-        for key, field in field_hash:
+        for key, field in field_hash.items():
             if not field.column_family:
                 continue
             column_key = '{}:{}'.format(field.column_family, key)
             column_value = data.get(key)
-            if not column_value:
+            if column_value is None:
                 continue
             row_data[column_key] = cls.serialize_field(field, column_value)
         return row_data
@@ -88,19 +89,21 @@ class HBaseModel:
         data = {}
         if isinstance(row_key, bytes):
             row_key = row_key.decode('utf-8')
-        row_key += ':'
+        row_key = row_key + ':'
         for key in cls.Meta.row_key:
             index = row_key.find(':')
-            data[key] = cls.deserilaize_field(key, row_key[:index])
+            if index == -1:
+                break
+            data[key] = cls.deserialize_field(key, row_key[:index])
             row_key = row_key[index + 1:]
         return data
 
     @classmethod
-    def deserilaize_field(cls, key, value):
+    def deserialize_field(cls, key, value):
         field = cls.get_field_hash()[key]
         if field.reverse:
             value = value[::-1]
-        if field.field_type in [IntergerField.field_type, TimeStampField.field_type]:
+        if field.field_type in [IntegerField.field_type, TimeStampField.field_type]:
             return int(value)
         return value
 
@@ -122,9 +125,7 @@ class HBaseModel:
     @classmethod
     def get_table(cls):
         conn = HBaseClient.get_connection()
-        if not cls.Meta.table_name:
-            raise NotImplementedError('Missing table_name in HBaseModel Meta class')
-        return conn.table(cls.Meta.table_name)
+        return conn.table(cls.get_table_name())
 
     @property
     def row_key(self):
@@ -139,9 +140,8 @@ class HBaseModel:
             # remove column family
             column_key = column_key.decode('utf-8')
             key = column_key[column_key.find(':') + 1:]
-            data[key] = cls.deserilaize_field(key, column_data)
+            data[key] = cls.deserialize_field(key, column_data)
         return cls(**data)
-
 
     @classmethod
     def get(cls, **kwargs):
@@ -149,3 +149,35 @@ class HBaseModel:
         table = cls.get_table()
         row = table.row(row_key)
         return cls.init_from_row(row_key, row)
+
+    @classmethod
+    def get_table_name(cls):
+        if not cls.Meta.table_name:
+            raise NotImplementedError('Missing table_name in HBaseModel meta class')
+        if settings.TESTING:
+            return f'test_{cls.Meta.table_name}'
+        return cls.Meta.table_name
+
+    @classmethod
+    def drop_table(cls):
+        if not settings.TESTING:
+            raise Exception('You can not drop table outside of unit tests')
+        conn = HBaseClient.get_connection()
+        conn.delete_table(cls.get_table_name(), True)
+
+    @classmethod
+    def create_table(cls):
+        if not settings.TESTING:
+            raise Exception('You can not create table outside of unit tests')
+        conn = HBaseClient.get_connection()
+        tables = [table.decode('utf-8') for table in conn.tables()]
+        if cls.get_table_name() in tables:
+            return
+        column_families = {
+            field.column_family: dict()
+            for key, field in cls.get_field_hash().items()
+            if field.column_family is not None
+        }
+        conn.create_table(cls.get_table_name(), column_families)
+
+
