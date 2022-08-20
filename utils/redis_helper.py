@@ -2,15 +2,17 @@ from utils.redis_client import RedisClient
 from utils.redis_serializers import DjangoModelSerializer
 from django.conf import settings
 
+
 class RedisHelper:
 
     @classmethod
     def load_objects(cls, key, queryset):
+        queryset = queryset[:settings.REDIS_LIST_LENGTH_LIMIT]
         conn = RedisClient.get_connection()
 
         # cache hit
         if conn.exists(key):
-            serialized_list = conn.lrange(key, 0, -1) # get value from start to end
+            serialized_list = conn.lrange(key, 0, -1)  # get value from start to end
             objects = []
             for serialized_data in serialized_list:
                 deserialized_obj = DjangoModelSerializer.deserialize(serialized_data)
@@ -23,6 +25,7 @@ class RedisHelper:
 
     @classmethod
     def push_object(cls, key, obj, queryset):
+        queryset = queryset[:settings.REDIS_LIST_LENGTH_LIMIT]
         conn = RedisClient.get_connection()
         if not conn.exists(key):
             cls._load_objects_to_cache(key, queryset)
@@ -31,13 +34,12 @@ class RedisHelper:
         conn.lpush(key, serialized_data)
         conn.ltrim(key, 0, settings.REDIS_LIST_LENGTH_LIMIT - 1)
 
-
     @classmethod
     def _load_objects_to_cache(cls, key, objects):
         conn = RedisClient.get_connection()
         serialized_list = []
         # Can only cache the limit size objects
-        for obj in objects[: settings.REDIS_LIST_LENGTH_LIMIT]:
+        for obj in objects:
             serialized_data = DjangoModelSerializer.serialize(obj)
             serialized_list.append(serialized_data)
 
