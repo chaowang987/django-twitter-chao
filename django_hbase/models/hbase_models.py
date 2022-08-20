@@ -40,7 +40,7 @@ class HBaseModel:
         return value if not field.reverse else value[::-1]
 
     @classmethod
-    def serialize_row_key(cls, data):
+    def serialize_row_key(cls, data, is_prefix=False):
         """
         key1: val1
         key2: val2
@@ -54,7 +54,9 @@ class HBaseModel:
                 continue
             value = data.get(key)
             if value is None:
-                raise BadRowKeyError(f'{key} is missing in the row key.')
+                if not is_prefix:
+                    raise BadRowKeyError(f'{key} is missing in the row key.')
+                break
             value = cls.serialize_field(field, value)
             if ':' in value:
                 raise BadRowKeyError(f"{key} should not contain ':' in value: {value}.")
@@ -147,8 +149,8 @@ class HBaseModel:
     def get(cls, **kwargs):
         row_key = cls.serialize_row_key(kwargs) # no need to expand the dict
         table = cls.get_table()
-        row = table.row(row_key)
-        return cls.init_from_row(row_key, row)
+        row_data = table.row(row_key)
+        return cls.init_from_row(row_key, row_data)
 
     @classmethod
     def get_table_name(cls):
@@ -180,4 +182,25 @@ class HBaseModel:
         }
         conn.create_table(cls.get_table_name(), column_families)
 
+    @classmethod
+    def serialize_row_key_from_tuple(cls, row_key_tuple):
+        if row_key_tuple is None:
+            return None
+        data = {
+            key: value
+            for key, value in zip(cls.Meta.row_key, row_key_tuple)
+        }
+        return cls.serialize_row_key(data, is_prefix=True)
 
+    @classmethod
+    def filter(cls, start=None, stop=None, prefix=None, limit=None, reverse=False):
+        row_start = cls.serialize_row_key_from_tuple(start)
+        row_stop = cls.serialize_row_key_from_tuple(stop)
+        row_prefix = cls.serialize_row_key_from_tuple(prefix)
+        table = cls.get_table()
+        rows = table.scan(row_start, row_stop, row_prefix, limit=limit, reverse=reverse)
+        results = []
+        for row_key, row_data in rows:
+            instance = cls.init_from_row(row_key, row_data)
+            results.append(instance)
+        return results
