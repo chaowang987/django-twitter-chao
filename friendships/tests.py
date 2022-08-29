@@ -11,7 +11,7 @@ import time
 class FriendshipServiceTests(TestCase):
 
     def setUp(self):
-        self.clear_cache()
+        super(FriendshipServiceTests, self).setUp()
         self.marcus = self.create_user('marcus')
         self.fiona = self.create_user('fiona')
 

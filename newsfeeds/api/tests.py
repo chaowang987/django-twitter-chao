@@ -14,7 +14,7 @@ FOLLOW_URL = '/api/friendships/{}/follow/'
 class FriendshipApiTests(TestCase):
 
     def setUp(self):
-        self.clear_cache()
+        super(FriendshipApiTests, self).setUp()
         self.marcus, self.marcus_client = self.create_user_and_client('marcus')
         self.fiona, self.fiona_client = self.create_user_and_client('fiona')
 

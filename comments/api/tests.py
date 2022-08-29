@@ -13,7 +13,7 @@ NEWSFEED_LIST_URL = '/api/newsfeeds/'
 class CommentApiTests(TestCase):
 
     def setUp(self):
-        self.clear_cache()
+        super(CommentApiTests, self).setUp()
         self.marcus, self.marcus_client = self.create_user_and_client('marcus')
         self.fiona, self.fiona_client = self.create_user_and_client('fiona')
         self.tweet = self.create_tweet(self.marcus)
