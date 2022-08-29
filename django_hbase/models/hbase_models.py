@@ -204,3 +204,10 @@ class HBaseModel:
             instance = cls.init_from_row(row_key, row_data)
             results.append(instance)
         return results
+
+    @classmethod
+    def delete(cls, **kwargs):
+        # need to pass in row_key to delete
+        row_key = cls.serialize_row_key(kwargs)
+        table = cls.get_table()
+        return table.delete(row_key)
