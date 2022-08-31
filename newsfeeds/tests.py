@@ -59,7 +59,7 @@ class NewsFeedTaskTests(TestCase):
         self.fiona = self.create_user('fiona')
 
     def test_fanout_main_task(self):
-        tweet = self.create_tweet(self.marcus, 'tweeet 1')
+        tweet = self.create_tweet(self.marcus, 'tweet 1')
         self.create_friendship(self.fiona, self.marcus)
         msg = fanout_newsfeeds_main_task(tweet.id, self.marcus.id)
         self.assertEqual(msg, '1 newsfeeds going to fanout, 1 batches created.')

@@ -1,10 +1,6 @@
 from friendships.services import FriendshipService
 from testing.testcases import TestCase
-from friendships.models import Friendship
-from friendships.api.paginations import FriendshipPagination
 from utils.paginations import EndlessPagination
-
-import math
 
 
 FOLLOW_URL = '/api/friendships/{}/follow/'
@@ -106,7 +102,7 @@ class FriendshipApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['results']), 3)
 
-        # make sure it is followed by newset to oldest
+        # make sure it is followed by newest to oldest
         ts0 = response.data['results'][0]['created_at']
         ts1 = response.data['results'][1]['created_at']
         ts2 = response.data['results'][2]['created_at']
@@ -131,7 +127,7 @@ class FriendshipApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['results']), 2)
 
-        # make sure it is followed by newset to oldest
+        # make sure it is followed by newest to oldest
         ts0 = response.data['results'][0]['created_at']
         ts1 = response.data['results'][1]['created_at']
         fw0 = response.data['results'][0]['user']['username']
@@ -188,7 +184,7 @@ class FriendshipApiTests(TestCase):
             has_followed = result['user']['id'] % 2 == 0
             self.assertEqual(result['has_followed'], has_followed)
 
-        # marcus should see has_followed as True for all of the followings
+        # marcus should see has_followed as True for all the followings
         response = self.marcus_client.get(url)
         for result in response.data['results']:
             self.assertEqual(result['has_followed'], True)

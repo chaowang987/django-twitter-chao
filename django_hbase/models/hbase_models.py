@@ -110,19 +110,32 @@ class HBaseModel:
         return value
 
     @classmethod
-    def create(cls, **kwargs):
+    def create(cls, batch=None, **kwargs):
         instance = cls(**kwargs)
-        instance.save()
+        instance.save(batch=batch)
         return instance
 
-    def save(self):
+    @classmethod
+    def batch_create(cls, batch_data):
+        table = cls.get_table()
+        batch = table.batch()
+        results = []
+        for data in batch_data:
+            results.append(cls.create(batch=batch, **data))
+        batch.send()
+        return results
+    
+    def save(self, batch=None):
         row_data = self.serialize_row_data(self.__dict__)
         # if row_data is empty, there will be no column_key and values, then hbase will not save anything
         # so we can raise an exception to avoid to save null data
         if len(row_data) == 0:
             raise EmptyColumnError()
-        table = self.get_table()
-        table.put(self.row_key, row_data)
+        if batch:
+            batch.put(self.row_key, row_data)
+        else:
+            table = self.get_table()
+            table.put(self.row_key, row_data)
 
     @classmethod
     def get_table(cls):

@@ -3,6 +3,7 @@ from twitter.cache import USER_NEWSFEEDS_PATTERN
 from utils.redis_helper import RedisHelper
 from newsfeeds.tasks import fanout_newsfeeds_main_task
 
+
 class NewsFeedService(object):
 
     @classmethod

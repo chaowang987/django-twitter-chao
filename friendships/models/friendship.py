@@ -6,7 +6,6 @@ from utils.memcached_helper import MemcachedHelper
 
 
 class Friendship(models.Model):
-
     from_user = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -41,6 +40,7 @@ class Friendship(models.Model):
     @property
     def cached_to_user(self):
         return MemcachedHelper.get_object_through_cache(User, self.to_user_id)
+
 
 pre_delete.connect(friendship_changed, sender=Friendship)
 post_save.connect(friendship_changed, sender=Friendship)

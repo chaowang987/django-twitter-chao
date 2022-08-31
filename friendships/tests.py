@@ -1,9 +1,7 @@
-from django_hbase.client import HBaseClient
 from testing.testcases import TestCase
-from friendships.models import Friendship
 from friendships.services import FriendshipService
 from django_hbase.models import EmptyColumnError, BadRowKeyError
-from friendships.hbase_models import HBaseFollower, HBaseFollowing
+from friendships.models import HBaseFollower, HBaseFollowing
 
 import time
 
@@ -19,12 +17,12 @@ class FriendshipServiceTests(TestCase):
         user1 = self.create_user('user1')
         user2 = self.create_user('user2')
         for to_user in [user1, user2, self.fiona]:
-            Friendship.objects.create(from_user=self.marcus, to_user=to_user)
+            self.create_friendship(from_user=self.marcus, to_user=to_user)
 
         user_id_set = FriendshipService.get_following_user_id_set(self.marcus.id)
-        self.assertEqual(user_id_set, set([user1.id, user2.id, self.fiona.id]))
+        self.assertEqual(user_id_set, {user1.id, user2.id, self.fiona.id})
 
-        Friendship.objects.filter(from_user=self.marcus, to_user=self.fiona).delete()
+        FriendshipService.unfollow(self.marcus.id, self.fiona.id)
         user_id_set = FriendshipService.get_following_user_id_set(self.marcus.id)
         self.assertSetEqual(user_id_set, {user1.id, user2.id})
 
