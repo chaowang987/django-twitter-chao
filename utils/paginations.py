@@ -4,8 +4,9 @@ from dateutil import parser
 from django.conf import settings
 from utils.time_constants import MAX_TIMESTAMP
 
-class EndlessPagination(BasePagination):
 
+class EndlessPagination(BasePagination):
+    
     page_size = 20
 
     def __init__(self):
@@ -41,7 +42,7 @@ class EndlessPagination(BasePagination):
         return reverse_ordered_list[index: index + self.page_size]
 
     def paginate_queryset(self, queryset, request, view=None):
-        # if cache hit, it will return a ordered list instead of a queryset.
+        # if cache hit, it will return an ordered list instead of a queryset.
         if 'created_at__gt' in request.query_params:
             created_at__gt = request.query_params['created_at__gt']
             queryset = queryset.filter(created_at__gt=created_at__gt)

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.utils.decorators import method_decorator
 
-from friendships.hbase_models import HBaseFollower, HBaseFollowing
+from friendships.models.hbase_friendship import HBaseFollower, HBaseFollowing
 from friendships.models import Friendship
 from friendships.api.serializers import (
     FollowerSerializer,
@@ -29,35 +29,35 @@ class FriendshipViewSet(viewsets.GenericViewSet):
     @method_decorator(ratelimit(key='user_or_ip', rate='3/s', method='GET', block=True))
     def followers(self, request, pk):
         # GET /api/friendships/1/followers/
-        pk, paginator = int(pk), self.paginator
+        pk = int(pk)
         if GateKeeper.is_switch_on('switch_friendship_to_hbase'):
-            page = paginator.paginate_hbase(HBaseFollower, (pk,), request)
+            page = self.paginator.paginate_hbase(HBaseFollower, (pk,), request)
         else:
             friendships = Friendship.objects.filter(to_user_id=pk).order_by('-created_at')
-            page = paginator.paginate_queryset(friendships)
+            page = self.paginate_queryset(friendships)
         serializer = FollowerSerializer(
             page,
             many=True,
             context={'request': request}
         )
-        return paginator.get_paginated_response(serializer.data)
+        return self.paginator.get_paginated_response(serializer.data)
 
     @action(methods=['GET'], detail=True, permission_classes=[AllowAny])
     @method_decorator(ratelimit(key='user_or_ip', rate='3/s', method='GET', block=True))
     def followings(self, request, pk):
         # GET /api/friendships/1/followers/
-        pk, paginator = int(pk), self.paginator
+        pk = int(pk)
         if GateKeeper.is_switch_on('switch_friendship_to_hbase'):
-            page = paginator.paginate_hbase(HBaseFollowing, (pk,), request)
+            page = self.paginator.paginate_hbase(HBaseFollowing, (pk,), request)
         else:
             friendships = Friendship.objects.filter(from_user_id=pk).order_by('-created_at')
-            page = paginator.paginate_queryset(friendships)
+            page = self.paginate_queryset(friendships)
         serializer = FollowingSerializer(
             page,
             many=True,
             context={'request': request}
         )
-        return paginator.get_paginated_response(serializer.data)
+        return self.paginator.get_paginated_response(serializer.data)
 
     @action(methods=['POST'], detail=True, permission_classes=[IsAuthenticated])
     @method_decorator(ratelimit(key='user', rate='10/s', method='POST', block=True))
