@@ -17,6 +17,10 @@ class GateKeeper(object):
         }
 
     @classmethod
+    def turn_on(cls, gk_name):
+        cls.set_kv(gk_name, 'percent', 100)
+
+    @classmethod
     def set_kv(cls, gk_name, key, value):
         conn = RedisClient.get_connection()
         name = f'gatekeeper:{gk_name}'
