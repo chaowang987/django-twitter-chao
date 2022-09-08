@@ -19,7 +19,10 @@ class EndlessPagination(BasePagination):
     def paginate_ordered_list(self, reverse_ordered_list, request):
         # greater than basically means getting the updated info
         if 'created_at__gt' in request.query_params:
-            created_at__gt = parser.isoparse(request.query_params['created_at__gt'])
+            try:
+                created_at__gt = parser.isoparse(request.query_params['created_at__gt'])
+            except ValueError:
+                created_at__gt = int(request.query_params['created_at__gt'])
             objects = []
             for obj in reverse_ordered_list:
                 if obj.created_at > created_at__gt:
@@ -32,7 +35,10 @@ class EndlessPagination(BasePagination):
         # less than means getting older info
         index = 0
         if 'created_at__lt' in request.query_params:
-            created_at__lt = parser.isoparse(request.query_params['created_at__lt'])
+            try:
+                created_at__lt = parser.isoparse(request.query_params['created_at__lt'])
+            except ValueError:
+                created_at__lt = int(request.query_params['created_at__lt'])
             for index, obj in enumerate(reverse_ordered_list):
                 if obj.created_at < created_at__lt:
                     break
